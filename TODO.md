@@ -1,6 +1,6 @@
 # TODO – needforheat-p1-reader-firmware
 
-Open work for this repository, distilled from the old NeedForHeat Trello board (paraphrased and regrouped) and from the 2026 maintenance review.
+Open work for this repository, distilled from the old NeedForHeat Trello board, including the discussions on the cards (paraphrased and regrouped) and from the 2026 maintenance review.
 
 Items that touch several repositories are written out in full in one *lead* repository; the others list them with a link (→). Keep the details up to date in the lead repository only.
 
@@ -10,7 +10,7 @@ Items that touch several repositories are written out in full in one *lead* repo
 
 ## Soon: robustness and correctness
 
-- [ ] <a id="lg"></a>**Landis+Gyr meters.** Several Landis+Gyr meters (E360 series) do not work; one source mentions a non-standard 115200 7E1 serial setting. Find out what is needed in firmware or hardware. Also affects: needforheat-p1-base-hardware. *(Trello #971, #1092)*
+- [ ] <a id="lg"></a>**Landis+Gyr meters.** Several Landis+Gyr meters (E360 series) do not work; one source mentions a non-standard 115200 7E1 serial setting. Find out what is needed in firmware or hardware. Pointers: experiences with the E360 and the Stegen Sensorbox on Tweakers; smart-stuff.nl sells P1 bridges and splitters and documents them openly. Also affects: needforheat-p1-base-hardware. *(Trello #971, #1092)*
 - [ ] → Make OTA updates trustworthy and staged — see [needforheat-generic-firmware](https://github.com/energiegedrag-nl/needforheat-generic-firmware/blob/main/TODO.md#ota) *(Trello #347, #770)*
 - [ ] → Upgrade to ESP-IDF 5.5 (WPA3, Wi-Fi 6) — see [needforheat-generic-firmware](https://github.com/energiegedrag-nl/needforheat-generic-firmware/blob/main/TODO.md#idf) *(Trello #806)*
 - [ ] → Let generic and device-specific code share buttons — see [needforheat-generic-firmware](https://github.com/energiegedrag-nl/needforheat-generic-firmware/blob/main/TODO.md#buttons) *(Trello #833)*
