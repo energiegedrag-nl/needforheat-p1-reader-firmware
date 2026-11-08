@@ -34,4 +34,4 @@ The Wi-Fi reset works as follows:
 The source code of this measurement device is publicly available on GitHub under [twomes-p1-reader-firmware](https://github.com/energietransitie/twomes-p1-reader-firmware).
 
 ## What if I have other quesions or remarks?
-Please send an email to the NeedForHeat research helpdesk via [needforheatonderzoek@windesheim.nl](needforheatonderzoek@windesheim.nl).
+Please contact the helpdesk of the organisation that runs your measurement campaign; you find its contact details on the information screen of the NeedForHeat app.
