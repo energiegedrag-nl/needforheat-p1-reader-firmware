@@ -31,7 +31,7 @@ The Wi-Fi reset works as follows:
 3. In the NeedForhat app, scan the QR code of your smart meter module again and follow the instructions.
 
 ## 5. Where can I find more technical information about this device?
-The source code of this measurement device is publicly available on GitHub under [twomes-p1-reader-firmware](https://github.com/energietransitie/twomes-p1-reader-firmware).
+The source code of this measurement device is publicly available on GitHub under [twomes-p1-reader-firmware](https://github.com/energiegedrag-nl/needforheat-p1-reader-firmware).
 
 ## What if I have other quesions or remarks?
 Please contact the helpdesk of the organisation that runs your measurement campaign; you find its contact details on the information screen of the NeedForHeat app.
