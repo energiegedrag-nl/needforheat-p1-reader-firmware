@@ -80,6 +80,9 @@ To develop software, or based on this software, see the [developing section in t
 This example was tested on:
 - [twomes-p1-gateway-hardware](https://github.com/energiegedrag-nl/twomes-p1-gateway-hardware)
 
+Prepared, but not yet tested on hardware:
+- [M5Stack CoreInk](https://docs.m5stack.com/en/core/coreink) with the [NeedForHeat P1-BASE v3](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware): PlatformIO environment `M5STACK_COREINK_P1BASE_V3`. P1 data on G13 (not inverted), data request on G26 (active high), P1 charging of the CoreInk battery on G25/G14 (only on DSMR 5 meters, with a voltage check on G36), and the existing reader's request on G34; see `src/p1base_v3.c` and the [hardware design](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware/blob/main/docs/design-v3.md#5-firmware-interface).
+
 ## Features
 
 List of features ready and TODOs for future development (other than the [features of the generic Twomes firmware](https://github.com/energiegedrag-nl/needforheat-generic-firmware#features)). 
@@ -97,7 +100,7 @@ Ready:
 To-do:
 
 * Provide visual feedback on status and errors through LEDs.
-* Support running on an [M5Stack CoreInk](https://github.com/m5stack/M5-CoreInk) in combination with a (future) P1-BASE extension.
+* Test the P1-BASE v3 support on hardware and show its status (meter voltage, charging, existing reader) on the e-ink screen.
 
 
 ## Status

@@ -4,6 +4,7 @@
 #include <scheduler.hpp>
 #include <p1.hpp>
 #include <P1Config.h>
+#include <p1base_v3.h>
 #include <dsmr_timestamp.hpp>
 #include <dsmr_timestampTest.hpp>
 
@@ -71,7 +72,12 @@ void readP1Task(void *taskInfo)
 	if (result.dsmrVersion == P1_UNKNOWN)
 	{
 		ESP_LOGI("P1", "incorrect p1 message");
+#if P1_HAS_LEDS
 		GenericESP32Firmware::BlinkLED(RED_LED_D1_ERROR, 2);
+#endif
+#ifdef NFH_BOARD_P1BASE_V3
+		p1base_after_read(false, P1_UNKNOWN);
+#endif
 		// Exit the function early since there is no good data
         return;
 	}
@@ -157,5 +163,10 @@ void readP1Task(void *taskInfo)
 		Measurements::Measurement g_use_cum__m3("g_use_cum__m3", result.g_use_cum__m3, g_time_t);
 		secureUploadQueue.AddMeasurement(g_use_cum__m3);
 	}
+#if P1_HAS_LEDS
 	GenericESP32Firmware::BlinkLED(GREEN_LED_D2_STATUS, 2);
+#endif
+#ifdef NFH_BOARD_P1BASE_V3
+	p1base_after_read(true, result.dsmrVersion);
+#endif
 }

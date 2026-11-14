@@ -28,6 +28,8 @@ extern "C" void app_main(void)
 
 #endif
 
+#ifndef NFH_BOARD_P1BASE_V3
+	// twomes-p1-gateway-hardware only: on a CoreInk, G12 is the power-hold pin and G14 is used by the P1-BASE v3.
 	// Configure Wi-Fi reset button.
 	gpio_config_t gpioConfigIn = {};
 	gpioConfigIn.intr_type = GPIO_INTR_NEGEDGE;
@@ -48,6 +50,7 @@ extern "C" void app_main(void)
 	gpio_config(&gpioConfigOut);
 
 	GenericESP32Firmware::SetResetWirelessLED(LED_WIFI_RESET);
+#endif
 
 #ifdef CONFIG_TWOMES_STRESS_TEST
 	Scheduler::AddTask(readP1Task, "uart_read_p1", 16384, NULL, 10, Scheduler::Interval::MINUTES_2);
