@@ -35,12 +35,32 @@ extern "C"
 #pragma message "Using P1Config version "  STR(P1CONFIG_VERSION)
 
   //Pin definitions:
+#ifdef NFH_BOARD_P1BASE_V3
+// M5Stack CoreInk with NeedForHeat P1-BASE v3 (see needforheat-p1-base-hardware, docs/design-v3.md)
+#define P1_RX_GPIO GPIO_NUM_13           // P1 data after the Schmitt trigger: NOT inverted
+#define P1_TX_GPIO UART_PIN_NO_CHANGE
+#define P1_RX_INVERTED 0
+#define PIN_DRQ GPIO_NUM_26              // data request: high = request (pull-down on the BASE)
+#define DRQ_ON 1
+#define DRQ_OFF 0
+#define P1_HAS_LEDS 0                    // the BASE has hardware LEDs; no GPIO LEDs
+#define OUTPUT_BITMASK ((1ULL << PIN_DRQ))
+#define INPUT_BITMASK 0ULL
+#else
+// twomes-p1-gateway-hardware
 #define BUTTON_GPIO12_SW3 GPIO_NUM_12
 #define RED_LED_D1_ERROR GPIO_NUM_13
 #define GREEN_LED_D2_STATUS GPIO_NUM_14
-#define PIN_DRQ GPIO_NUM_17
+#define P1_RX_GPIO GPIO_NUM_16
+#define P1_TX_GPIO GPIO_NUM_17
+#define P1_RX_INVERTED 1
+#define PIN_DRQ GPIO_NUM_17              // DRQ pin has an inverter to pull up to 5 V: active low
+#define DRQ_ON 0
+#define DRQ_OFF 1
+#define P1_HAS_LEDS 1
 #define OUTPUT_BITMASK ((1ULL << RED_LED_D1_ERROR) | (1ULL << GREEN_LED_D2_STATUS) | (1ULL << PIN_DRQ))
 #define INPUT_BITMASK ((1ULL << BUTTON_GPIO12_SW3))
+#endif
 
 //UART defines
 #define P1_BUFFER_SIZE 10240

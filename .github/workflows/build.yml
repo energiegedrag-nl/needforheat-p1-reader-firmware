@@ -20,6 +20,7 @@ jobs:
         platformio_env:
           - ESP32DEV
           - M5STACK_COREINK
+          - M5STACK_COREINK_P1BASE_V3
         
     steps:
       # Checkout repository.
