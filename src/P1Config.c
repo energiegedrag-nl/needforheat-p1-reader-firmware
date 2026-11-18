@@ -195,7 +195,19 @@ int p1StringToStruct(const char *p1String, P1Data *p1Struct) {
     //REVIEW: should packaging into struct be omitted and directly package into JSON format?ol
 
     unsigned int n;
-    
+
+    //Actual power (optional, for the screen only): OBIS 1-0:1.7.0 and 1-0:2.7.0; no error when absent
+    p1Struct->e_use__kW = P1_UNKNOWN;
+    p1Struct->e_ret__kW = P1_UNKNOWN;
+    const char *pos_power = strstr(p1String, "1-0:1.7.0(");
+    if (pos_power == NULL || sscanf(pos_power, "1-0:1.7.0(%lf", &p1Struct->e_use__kW) != 1) {
+        p1Struct->e_use__kW = P1_UNKNOWN;
+    }
+    pos_power = strstr(p1String, "1-0:2.7.0(");
+    if (pos_power == NULL || sscanf(pos_power, "1-0:2.7.0(%lf", &p1Struct->e_ret__kW) != 1) {
+        p1Struct->e_ret__kW = P1_UNKNOWN;
+    }
+
     //DSMR version: OBIS reference 1-3:0.2.8
     if (getBaudrate__b_s_1() == 9600) {
         ESP_LOGI("baudrate", "9600");

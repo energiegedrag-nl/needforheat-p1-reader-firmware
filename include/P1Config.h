@@ -95,6 +95,8 @@ typedef struct P1Data {
     double g_use_cum__m3;      // Gas meter reading [m3]
     char dsmrTimestamp_g[14];  // DSMR timestamp string for gas meter reading [14 positions needed for YYMMDDhhmmssX or YYMMDDhhmmss string and '\0' terminator]
     char meter_code__hex[11];  // hex-encoded meter code string [11 positions needed for 5 characters * 2 hex characters per character and '\0' terminator]
+    double e_use__kW;          // Actual power delivered to the home, OBIS 1-0:1.7.0 [kW]; P1_UNKNOWN when absent (screen only, not uploaded)
+    double e_ret__kW;          // Actual power returned by the home, OBIS 1-0:2.7.0 [kW]; P1_UNKNOWN when absent (screen only, not uploaded)
 } P1Data;
 
 

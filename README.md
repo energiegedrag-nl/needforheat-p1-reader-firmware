@@ -81,7 +81,29 @@ This example was tested on:
 - [twomes-p1-gateway-hardware](https://github.com/energiegedrag-nl/twomes-p1-gateway-hardware)
 
 Prepared, but not yet tested on hardware:
-- [M5Stack CoreInk](https://docs.m5stack.com/en/core/coreink) with the [NeedForHeat P1-BASE v3](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware): PlatformIO environment `M5STACK_COREINK_P1BASE_V3`. P1 data on G13 (not inverted), data request on G26 (active high), P1 charging of the CoreInk battery on G25/G14 (only on DSMR 5 meters, with a voltage check on G36), and the existing reader's request on G34; see `src/p1base_v3.c` and the [hardware design](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware/blob/main/docs/design-v3.md#5-firmware-interface).
+- [M5Stack CoreInk](https://docs.m5stack.com/en/core/coreink) with the [NeedForHeat P1-BASE v3](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware): PlatformIO environment `M5STACK_COREINK_P1BASE_V3`. P1 data on G13 (not inverted), data request on G26 (active high), P1 charging of the CoreInk battery on G25/G14, the meter's 5 V on G36 and the existing reader's request on G34; see `src/p1base_v3.c` and the [hardware design](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware/blob/main/docs/design-v3.md#5-firmware-interface). Details below.
+
+### P1-BASE v3
+
+* **Charging.** Only on DSMR 5 meters: 60 mA first, 120 mA when the meter's 5 V stays at or above 4.75 V, one step back below 4.6 V, off below 4.5 V. Off above 4.1 V cell voltage (with the CoreInk drawing from the cell the TP4056 may never terminate) and on again below 4.0 V. At most 60 mA when a BatteryBASE is detected (ADS1115 at I²C 0x48), so that no more than one BASE charges at full current.
+* **Charging only happens while the CoreInk is on.** Between measurements the CoreInk switches itself off and the RTC wakes it; the ESP32 is then unpowered and the pull-down on the BASE switches G25 off (`gpio_hold` cannot help here). So after a read on DSMR 5, while the cell is below 4.0 V, the P1 task keeps the CoreInk on for a *charge window* until 5 s before the next read, the cell reaches 4.1 V, or the meter supply sags. The CoreInk itself draws far less than the charge current while it waits, so the cell gains charge.
+* **Boot.** G14 and G25 are set low first thing in `app_main`; G14 has an internal pull-up at reset (harmless while G25 is low).
+* **LED dimmer.** The PCA9633 (U5, I²C 0x62) is set to about 12 % brightness (MODE1 0x00, MODE2 0x14, PWM0 0xFF, GRPPWM 32, LEDOUT 0x03) after boot and after every read, because it restarts at full brightness when it loses its supply. A BASE without U5 does not answer at 0x62 and keeps its LEDs at full brightness. The firmware never writes to 0x03 (software reset) or 0x70 (all-call).
+* **Diagnosis** (logged after every read, and shown on the e-ink screen with a generic library that has the e-ink status screen, build flag `NFH_EINK_STATUS`):
+
+  | Meter 5 V (G36) | Telegrams | Status text | Meaning |
+  |---|---|---|---|
+  | 4.6–5.5 V | yes | `ok` | DSMR 4 or 5 |
+  | 4.6–5.5 V | no | `geen data` | the meter does not send: request not reaching it, cable in the wrong socket, or a meter that releases its data line |
+  | < 0.5 V | yes | `DSMR 2/3: USB nodig` | DSMR 2/3 meter without P1 supply: power the CoreInk from USB |
+  | < 0.5 V | no | `geen meter` | no meter, crossed cable, or the cable is in the wrong socket |
+  | 0.5–4.5 V | – | `meter 5 V te laag` | bad contact or a very weak supply |
+  | 4.5–4.6 V | – | `P1 overbelast` | P1 supply overloaded: charging stepped down |
+
+  With no cable in the meter socket and the CoreInk on, the data line is pulled high on the BASE: its LED1 lights steadily and the UART sees a break. On a DSMR 2/3 meter with the CoreInk off, an existing reader's request reaches the meter only passively (about 3.5 V with a weak reader); the active request path needs the CoreInk on.
+* **Screens.** Screen 8 (P1 overview): main value `stroom` in kW (delivered minus returned, OBIS 1-0:1.7.0 and 1-0:2.7.0), tiles `DSMR`, `lezer` (existing reader requesting) and `laden` (charge current). Screen 9 (P1 cable diagnosis): the status text as label, the meter's 5 V as main value, tiles `lezer` and `laden`. Supply indicator `P1` / `accu` on the right of the footer.
+* **HAT conflict.** A HAT on the CoreInk's top header shares G25, G26 and G36 with the P1-BASE: do not use both.
+* **Not detected yet:** USB power. With USB connected while P1 charges, the cell may get more than 0.5 C; the 4.1 V limit stops P1 charging near full. This belongs in the generic power manager, as does the rest of the charging logic.
 
 ## Features
 
@@ -100,7 +122,8 @@ Ready:
 To-do:
 
 * Provide visual feedback on status and errors through LEDs.
-* Test the P1-BASE v3 support on hardware and show its status (meter voltage, charging, existing reader) on the e-ink screen.
+* Test the P1-BASE v3 support on hardware (charge window, LED dimmer, diagnosis) and switch on the e-ink screens 8 and 9 once the generic library with the e-ink status screen is released.
+* Move the P1-BASE charging logic to the generic power manager (with USB detection and the BatteryBASE).
 
 
 ## Status
