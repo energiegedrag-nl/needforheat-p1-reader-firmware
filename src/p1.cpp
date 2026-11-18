@@ -63,6 +63,14 @@ namespace
 		return text;
 	}
 
+	/** DSMR version as it is written in the standard: with a dot, e.g. "5.0". */
+	std::string DsmrVersion(float version)
+	{
+		char text[8];
+		snprintf(text, sizeof(text), "%.1f", version);
+		return text;
+	}
+
 	/**
 	 * Screen 8 (P1 overview) when telegrams arrive, screen 9 (P1 cable diagnosis) otherwise. Sizes follow the
 	 * readable 1-bit layout of the generic e-ink GUI: a main value with its unit, at most three short tiles, and the
@@ -92,8 +100,8 @@ namespace
 			// DSMR 2/3 shows in the DSMR tile, a sagging supply in the charging tile. A DSMR 2/3 meter cannot charge
 			// the cell: on battery, ask for USB there.
 			if (status == P1BASE_DSMR23 && strcmp(p1base_supply_text(), "USB") != 0)
-				charging = "via USB";
-			tiles = {{"DSMR", Decimal(data->dsmrVersion, 1)}, {"lezer", reader}, {"laden", charging}};
+				charging = "USB!";
+			tiles = {{"DSMR", DsmrVersion(data->dsmrVersion)}, {"lezer", reader}, {"laden", charging}};
 		}
 		else
 		{
