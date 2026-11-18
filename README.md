@@ -89,7 +89,7 @@ Prepared, but not yet tested on hardware:
 * **Charging only happens while the CoreInk is on.** Between measurements the CoreInk switches itself off and the RTC wakes it; the ESP32 is then unpowered and the pull-down on the BASE switches G25 off (`gpio_hold` cannot help here). So after a read on DSMR 5, while the cell is below 4.0 V, the P1 task keeps the CoreInk on for a *charge window* until 70 s before the next read, the cell reaches 4.1 V, or the meter supply sags. The CoreInk itself draws far less than the charge current while it waits, so the cell gains charge (about 10 mAh per window; the extra boot costs about 0.1 mAh).
 * **Boot.** G14 and G25 are set low first thing in `app_main`; G14 has an internal pull-up at reset (harmless while G25 is low).
 * **LED dimmer.** The PCA9633 (U5, I²C 0x62) is set to about 12 % brightness (MODE1 0x00, MODE2 0x14, PWM0 0xFF, GRPPWM 32, LEDOUT 0x03) after boot and after every read, because it restarts at full brightness when it loses its supply. A BASE without U5 does not answer at 0x62 and keeps its LEDs at full brightness. The firmware never writes to 0x03 (software reset) or 0x70 (all-call).
-* **Diagnosis** (logged after every read, and shown on the e-ink screen with a generic library that has the e-ink status screen, build flag `NFH_EINK_STATUS`):
+* **Diagnosis** (logged after every read and shown on the e-ink screen; build flag `NFH_EINK_STATUS`, needs generic firmware v3.4.0-rc.3 or later):
 
   | Meter 5 V (G36) | Telegrams | Status text | Meaning |
   |---|---|---|---|
@@ -123,7 +123,7 @@ Ready:
 To-do:
 
 * Provide visual feedback on status and errors through LEDs.
-* Test the P1-BASE v3 support on hardware (charge window, LED dimmer, diagnosis) and switch on the e-ink screens 8 and 9 once the generic library with the e-ink status screen is released.
+* Test the P1-BASE v3 support on hardware (charge window, LED dimmer, diagnosis) and check the e-ink screens 8 and 9 on the panel.
 * Move the P1-BASE charging logic to the generic power manager (with USB detection and the BatteryBASE).
 
 

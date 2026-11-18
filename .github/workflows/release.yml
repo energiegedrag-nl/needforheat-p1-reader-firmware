@@ -19,6 +19,7 @@ jobs:
         platformio_env: 
           - ESP32DEV
           # - M5STACK_COREINK
+          - M5STACK_COREINK_P1BASE_V3
 
         # Twomes server environments to build for.
         twomes_server_env:
