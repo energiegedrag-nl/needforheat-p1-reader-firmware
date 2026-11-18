@@ -80,6 +80,32 @@ To develop software, or based on this software, see the [developing section in t
 This example was tested on:
 - [twomes-p1-gateway-hardware](https://github.com/energiegedrag-nl/twomes-p1-gateway-hardware)
 
+Prepared, but not yet tested on hardware:
+- [M5Stack CoreInk](https://docs.m5stack.com/en/core/coreink) with the [NeedForHeat P1-BASE v3](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware): PlatformIO environment `M5STACK_COREINK_P1BASE_V3`. P1 data on G13 (not inverted), data request on G26 (active high), P1 charging of the CoreInk battery on G25/G14, the meter's 5 V on G36 and the existing reader's request on G34; see `src/p1base_v3.c` and the [hardware design](https://github.com/energiegedrag-nl/needforheat-p1-base-hardware/blob/main/docs/design-v3.md#5-firmware-interface). Details below.
+
+### P1-BASE v3
+
+* **Charging.** Only on DSMR 5 meters: 60 mA first, 120 mA when the meter's 5 V stays at or above 4.75 V, one step back below 4.6 V, off below 4.5 V. Off above 4.1 V cell voltage (with the CoreInk drawing from the cell the TP4056 may never terminate) and on again below 4.0 V. At most 60 mA when another source charges too: a BatteryBASE (detected by its ADS1115 at I²C 0x48) or USB (see below), so that the cell gets no more than about 0.5 C.
+* **Charging only happens while the CoreInk is on.** Between measurements the CoreInk switches itself off and the RTC wakes it; the ESP32 is then unpowered and the pull-down on the BASE switches G25 off (`gpio_hold` cannot help here). So after a read on DSMR 5, while the cell is below 4.0 V, the P1 task keeps the CoreInk on for a *charge window* until 70 s before the next read, the cell reaches 4.1 V, or the meter supply sags. The CoreInk itself draws far less than the charge current while it waits, so the cell gains charge (about 10 mAh per window; the extra boot costs about 0.1 mAh).
+* **Boot.** G14 and G25 are set low first thing in `app_main`; G14 has an internal pull-up at reset (harmless while G25 is low).
+* **LED dimmer.** The PCA9633 (U5, I²C 0x62) is set to about 12 % brightness (MODE1 0x00, MODE2 0x14, PWM0 0xFF, GRPPWM 32, LEDOUT 0x03) after boot and after every read, because it restarts at full brightness when it loses its supply. A BASE without U5 does not answer at 0x62 and keeps its LEDs at full brightness. The firmware never writes to 0x03 (software reset) or 0x70 (all-call).
+* **Diagnosis** (logged after every read and shown on the e-ink screen; build flag `NFH_EINK_STATUS`, needs generic firmware v3.4.0-rc.3 or later):
+
+  | Meter 5 V (G36) | Telegrams | Status text | Meaning |
+  |---|---|---|---|
+  | 4.6–5.5 V | yes | `ok` | DSMR 4 or 5 |
+  | 4.6–5.5 V | no | `geen data` | the meter does not send: request not reaching it, cable in the wrong socket, or a meter that releases its data line |
+  | < 0.5 V | yes | `DSMR 2/3: USB nodig` | DSMR 2/3 meter without P1 supply: power the CoreInk from USB |
+  | < 0.5 V | no | `geen meter` | no meter, crossed cable, or the cable is in the wrong socket |
+  | 0.5–4.5 V | – | `meter 5 V te laag` | bad contact or a very weak supply |
+  | 4.5–4.6 V | – | `P1 overbelast` | P1 supply overloaded: charging stepped down |
+
+  With no cable in the meter socket and the CoreInk on, the data line is pulled high on the BASE: its LED1 lights steadily and the UART sees a break. On a DSMR 2/3 meter with the CoreInk off, an existing reader's request reaches the meter only passively (about 3.5 V with a weak reader); the active request path needs the CoreInk on.
+* **Screens.** Screen 8 (P1 overview): main value `stroom` in kW (delivered minus returned, OBIS 1-0:1.7.0 and 1-0:2.7.0), tiles `DSMR`, `lezer` (existing reader requesting) and `laden` (charge current, or `USB!` on a DSMR 2/3 meter without USB). Screen 9 (P1 cable diagnosis): the status text as label, the meter's 5 V as main value, tiles `lezer` and `laden`. Supply indicator `USB` / `P1` / `accu` on the right of the footer.
+* **HAT conflict.** A HAT on the CoreInk's top header shares G25, G26 and G36 with the P1-BASE: do not use both.
+* **USB detection.** The CoreInk cannot sense USB, but it cannot switch itself off on USB either (the scheduler then waits instead). So when the CoreInk is still on at a read, at least 60 s after the previous read in the same boot, it is on USB: P1 charging is limited to 60 mA and the supply indicator shows `USB`. The charge window ends 70 s before the next read so that the scheduler always tries to power off. Unplugging USB lets the next power-off succeed and clears the flag. A very long upload after a read can give a false `USB` until the next power-off; the only effect is 60 mA instead of 120 mA.
+* **Later:** the charging logic belongs in a power manager in the generic library, together with the BatteryBASE.
+
 ## Features
 
 List of features ready and TODOs for future development (other than the [features of the generic Twomes firmware](https://github.com/energiegedrag-nl/needforheat-generic-firmware#features)). 
@@ -97,7 +123,8 @@ Ready:
 To-do:
 
 * Provide visual feedback on status and errors through LEDs.
-* Support running on an [M5Stack CoreInk](https://github.com/m5stack/M5-CoreInk) in combination with a (future) P1-BASE extension.
+* Test the P1-BASE v3 support on hardware (charge window, LED dimmer, diagnosis) and check the e-ink screens 8 and 9 on the panel.
+* Move the P1-BASE charging logic to the generic power manager (with USB detection and the BatteryBASE).
 
 
 ## Status

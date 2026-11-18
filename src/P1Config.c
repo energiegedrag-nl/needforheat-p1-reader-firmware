@@ -29,8 +29,10 @@ const uart_config_t dsmr4or5_uart_config = {
  */
 void initP1UART() {
     ESP_ERROR_CHECK(uart_param_config(P1PORT_UART_NUM, &dsmr4or5_uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(P1PORT_UART_NUM, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));// Set UART pins(TX: IO17, RX: IO16, RTS: *, CTS: *)
+    ESP_ERROR_CHECK(uart_set_pin(P1PORT_UART_NUM, P1_TX_GPIO, P1_RX_GPIO, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+#if P1_RX_INVERTED
     ESP_ERROR_CHECK(uart_set_line_inverse(P1PORT_UART_NUM, UART_SIGNAL_RXD_INV | UART_SIGNAL_IRDA_RX_INV)); //Invert RX data
+#endif
     ESP_ERROR_CHECK(uart_driver_install(P1PORT_UART_NUM, P1_BUFFER_SIZE * 2, 0, 0, NULL, 0));
     ESP_LOGD("Inital P1 serial config set to", "115200/8N1");
 }
@@ -62,7 +64,11 @@ void initGPIO_P1() {
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
+    gpio_set_level(PIN_DRQ, DRQ_OFF);
     //CONFIGURE INPUTS:
+    if (INPUT_BITMASK == 0ULL) {
+        return;
+    }
     io_conf.intr_type = GPIO_INTR_NEGEDGE;
     io_conf.mode = GPIO_MODE_INPUT;
     io_conf.pin_bit_mask = INPUT_BITMASK;
@@ -189,7 +195,19 @@ int p1StringToStruct(const char *p1String, P1Data *p1Struct) {
     //REVIEW: should packaging into struct be omitted and directly package into JSON format?ol
 
     unsigned int n;
-    
+
+    //Actual power (optional, for the screen only): OBIS 1-0:1.7.0 and 1-0:2.7.0; no error when absent
+    p1Struct->e_use__kW = P1_UNKNOWN;
+    p1Struct->e_ret__kW = P1_UNKNOWN;
+    const char *pos_power = strstr(p1String, "1-0:1.7.0(");
+    if (pos_power == NULL || sscanf(pos_power, "1-0:1.7.0(%lf", &p1Struct->e_use__kW) != 1) {
+        p1Struct->e_use__kW = P1_UNKNOWN;
+    }
+    pos_power = strstr(p1String, "1-0:2.7.0(");
+    if (pos_power == NULL || sscanf(pos_power, "1-0:2.7.0(%lf", &p1Struct->e_ret__kW) != 1) {
+        p1Struct->e_ret__kW = P1_UNKNOWN;
+    }
+
     //DSMR version: OBIS reference 1-3:0.2.8
     if (getBaudrate__b_s_1() == 9600) {
         ESP_LOGI("baudrate", "9600");
@@ -434,7 +452,7 @@ P1Data p1Read()
 
         ESP_LOGI("P1", "Attempting to read P1 Port");
         //DRQ pin has inverter to pull up to 5V, which makes it active low:      
-        gpio_set_level(PIN_DRQ, 0);
+        gpio_set_level(PIN_DRQ, DRQ_ON);
 
 
         if(getIsAtLeastDSMR5() == 1)
@@ -452,7 +470,7 @@ P1Data p1Read()
         
     
         //Write DRQ pin low again (otherwise P1 port keeps transmitting every second);
-        gpio_set_level(PIN_DRQ, 1);
+        gpio_set_level(PIN_DRQ, DRQ_OFF);
 
         //Allcoate a buffer with the size of the P1 UART buffer to store P1 data:
         uint8_t *data = (uint8_t *)malloc(P1_BUFFER_SIZE);

@@ -1,7 +1,7 @@
 #include "abr.h"
 #include "P1Config.h"
 
-#define INPUT_PIN 16
+#define INPUT_PIN P1_RX_GPIO
 #define bufferSize 20
 
 static int32_t currentBaudrate_b_s_1 = 0;       // Initialize to a default value
@@ -59,7 +59,7 @@ int32_t detectBaudrate__b_s_1()
 {    
     abrInit();
     //DRQ pin has inverter to pull up to 5V, which makes it active low:      
-    gpio_set_level(PIN_DRQ, 0);
+    gpio_set_level(PIN_DRQ, DRQ_ON);
     //measure the baudrate
 
     int64_t bitFlankTimestamps__us[bufferSize];
@@ -113,7 +113,7 @@ int32_t detectBaudrate__b_s_1()
     }
 
     //Write DRQ pin low again (otherwise P1 port keeps transmitting every second);
-    gpio_set_level(PIN_DRQ, 1);
+    gpio_set_level(PIN_DRQ, DRQ_OFF);
 
     return baudrate__b_s_1;
 }

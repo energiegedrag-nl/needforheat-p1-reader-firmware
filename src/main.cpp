@@ -3,6 +3,7 @@
 #include <generic_tasks.hpp>
 #include <scheduler.hpp>
 #include <p1.hpp>
+#include <p1base_v3.h>
 #include <util/buttons.hpp>
 #include <util/error.hpp>
 
@@ -17,6 +18,11 @@ constexpr const gpio_num_t LED_WIFI_RESET = GPIO_NUM_14;
 
 extern "C" void app_main(void)
 {
+#ifdef NFH_BOARD_P1BASE_V3
+	// First thing at boot: P1 charging off (G14 before G25) until the first read decides otherwise.
+	p1base_init();
+#endif
+
 #ifdef CONFIG_PERFORM_UNIT_TESTS
 	performTestSequence();
 
@@ -28,6 +34,8 @@ extern "C" void app_main(void)
 
 #endif
 
+#ifndef NFH_BOARD_P1BASE_V3
+	// twomes-p1-gateway-hardware only: on a CoreInk, G12 is the power-hold pin and G14 is used by the P1-BASE v3.
 	// Configure Wi-Fi reset button.
 	gpio_config_t gpioConfigIn = {};
 	gpioConfigIn.intr_type = GPIO_INTR_NEGEDGE;
@@ -48,6 +56,7 @@ extern "C" void app_main(void)
 	gpio_config(&gpioConfigOut);
 
 	GenericESP32Firmware::SetResetWirelessLED(LED_WIFI_RESET);
+#endif
 
 #ifdef CONFIG_TWOMES_STRESS_TEST
 	Scheduler::AddTask(readP1Task, "uart_read_p1", 16384, NULL, 10, Scheduler::Interval::MINUTES_2);
@@ -60,6 +69,11 @@ extern "C" void app_main(void)
 	GenericTasks::AddTasksToScheduler();
 
 	GenericESP32Firmware::Initialize(DEVICE_TYPE_NAME);
+
+#ifdef NFH_BOARD_P1BASE_V3
+	// The generic firmware set up I2C for the CoreInk's RTC: now detect a BatteryBASE and dim the P1-BASE LEDs.
+	p1base_init_i2c();
+#endif
 
 	// Start the scheduler.
 	Scheduler::Start();
