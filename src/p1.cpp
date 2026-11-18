@@ -89,7 +89,10 @@ namespace
 			{
 				bigValue = "-";
 			}
-			// DSMR 2/3 shows in the DSMR tile, a sagging supply in the charging tile
+			// DSMR 2/3 shows in the DSMR tile, a sagging supply in the charging tile. A DSMR 2/3 meter cannot charge
+			// the cell: on battery, ask for USB there.
+			if (status == P1BASE_DSMR23 && strcmp(p1base_supply_text(), "USB") != 0)
+				charging = "via USB";
 			tiles = {{"DSMR", Decimal(data->dsmrVersion, 1)}, {"lezer", reader}, {"laden", charging}};
 		}
 		else
