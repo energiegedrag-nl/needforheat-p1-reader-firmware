@@ -91,10 +91,13 @@ p1base_status_t p1base_after_read(bool telegram_ok, float dsmr_version);
  */
 void p1base_charge_window(time_t deadline);
 
+/** Call at the end of every P1 task (after the charge window): used to detect USB power. */
+void p1base_read_done(void);
+
 /** Short Dutch text for the screen and log, e.g. "geen data". */
 const char *p1base_status_text(p1base_status_t status);
 
-/** Supply indicator text: "P1" while the meter charges the cell, else "accu" (USB cannot be detected yet). */
+/** Supply indicator text: "USB" when the CoreInk stays on between reads, "P1" while the meter charges the cell, else "accu". */
 const char *p1base_supply_text(void);
 
 #endif // NFH_BOARD_P1BASE_V3

@@ -116,14 +116,17 @@ namespace
 	}
 
 	/**
-	 * Keep the CoreInk on to charge from the P1 port until shortly before the next read; the scheduler only
-	 * switches the CoreInk off after all tasks have finished, and powering off for a few seconds costs more than it saves.
+	 * Keep the CoreInk on to charge from the P1 port until 70 s before the next read; the scheduler only switches
+	 * the CoreInk off after all tasks have finished. The 70 s make sure the scheduler still tries to power off: if
+	 * that fails, the CoreInk is on USB (see p1base_read_done()). The extra boot costs about 0.1 mAh, a charge window
+	 * gains about 10 mAh.
 	 */
 	void P1ChargeWindow(uint16_t interval__s)
 	{
 		time_t now = time(nullptr);
 		time_t nextRead = (now / interval__s + 1) * interval__s;
-		p1base_charge_window(nextRead - 5);
+		p1base_charge_window(nextRead - 70);
+		p1base_read_done();
 	}
 } // namespace
 #endif // NFH_BOARD_P1BASE_V3
@@ -158,6 +161,7 @@ void readP1Task(void *taskInfo)
 #endif
 #ifdef NFH_BOARD_P1BASE_V3
 		ShowP1Status(p1base_after_read(false, P1_UNKNOWN), nullptr);
+		p1base_read_done();
 #endif
 		// Exit the function early since there is no good data
         return;

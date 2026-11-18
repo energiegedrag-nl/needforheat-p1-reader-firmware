@@ -28,6 +28,7 @@ static const char *TAG = "P1-BASE";
 #define CELL_RESUME 4.00f // charge again (and open a charge window) below this
 
 #define CHARGE_WINDOW_STEP_MS 10000
+#define USB_GAP_S 60 // a gap this long between reads means the scheduler tried to power off
 
 // I2C addresses on the CoreInk bus (G21/G22). Never write to 0x03 (PCA9633 software reset) or 0x70 (all-call).
 #define I2C_ADDR_PCA9633 0x62
@@ -49,6 +50,8 @@ static bool adc_ready = false;
 static p1base_charge_t charge_level = P1BASE_CHARGE_OFF;
 static bool cell_full = false;
 static bool other_charger = false; // a BatteryBASE is fitted: at most 60 mA from P1
+static bool usb_power = false;     // USB detected: at most 60 mA from P1
+static time_t last_read_done = 0;  // end of the previous P1 task in this boot; 0: none yet
 static bool has_dimmer = false;
 
 void p1base_init(void)
@@ -157,7 +160,7 @@ bool p1base_external_reader_requests(void)
 
 void p1base_set_charging(p1base_charge_t level)
 {
-    if (level == P1BASE_CHARGE_120MA && other_charger)
+    if (level == P1BASE_CHARGE_120MA && (other_charger || usb_power))
     {
         level = P1BASE_CHARGE_60MA;
     }
@@ -206,7 +209,7 @@ static bool cell_allows_charging(float cell)
 /** One step up (60 → 120 mA at most), then back down at once when the meter voltage sags. */
 static void try_step_up(void)
 {
-    if (charge_level == P1BASE_CHARGE_120MA || (charge_level == P1BASE_CHARGE_60MA && other_charger))
+    if (charge_level == P1BASE_CHARGE_120MA || (charge_level == P1BASE_CHARGE_60MA && (other_charger || usb_power)))
     {
         return;
     }
@@ -218,8 +221,30 @@ static void try_step_up(void)
     }
 }
 
+/**
+ * The CoreInk cannot sense USB, but it cannot switch itself off on USB either: the generic scheduler then waits
+ * instead. So when this boot already finished a read and at least USB_GAP_S passed since (enough for the scheduler
+ * to try to power off), the CoreInk stayed on: USB. Unplugging USB lets the next power-off succeed, and the
+ * reboot clears the flag. A long upload after the read can make this a false positive; the effect is only
+ * 60 mA instead of 120 mA and "USB" on the screen until the next power-off.
+ */
+static void detect_usb(void)
+{
+    if (!usb_power && last_read_done != 0 && time(NULL) - last_read_done >= USB_GAP_S)
+    {
+        usb_power = true;
+        ESP_LOGI(TAG, "the CoreInk stayed on between reads: USB power, P1 charging at most 60 mA");
+    }
+}
+
+void p1base_read_done(void)
+{
+    last_read_done = time(NULL);
+}
+
 p1base_status_t p1base_after_read(bool telegram_ok, float dsmr_version)
 {
+    detect_usb();
     setup_leds();
 
     float v = p1base_meter_voltage();
@@ -316,7 +341,8 @@ const char *p1base_status_text(p1base_status_t status)
 
 const char *p1base_supply_text(void)
 {
-    // USB cannot be detected yet (see README); P1 when the meter charges the cell, else the cell itself.
+    if (usb_power)
+        return "USB";
     return charge_level == P1BASE_CHARGE_OFF ? "accu" : "P1";
 }
 

@@ -21,6 +21,7 @@ jobs:
           - ESP32DEV
           - M5STACK_COREINK
           - M5STACK_COREINK_P1BASE_V3
+          - M5STACK_COREINK_P1BASE_V3_EINK
         
     steps:
       # Checkout repository.
